@@ -35,20 +35,22 @@ struct Puzzle: Identifiable {
 // MARK: - Puzzle Generator
 
 struct PuzzleGenerator {
+    // Limits randomized distractor generation attempts to keep puzzle creation bounded
+    // while still allowing a broad search space for unique rotations.
     private static let maxOptionGenerationAttempts = 64
 
     /// Generate a puzzle for the given difficulty
     static func generate(difficulty: Difficulty) -> Puzzle {
         let structures = structuresForDifficulty(difficulty)
         let rotations = Rotation3D.rotationsForDifficulty(difficulty)
-        let fallbackStructure = BlockStructure.beginnerStructures.first ?? BlockStructure(
+        let minimalFallbackStructure = BlockStructure.beginnerStructures.first ?? BlockStructure(
             blocks: [Block(x: 0, y: 0, z: 0)],
             name: "Minimal Structure"
         )
 
         // Pick two different structures
-        let shuffledStructures = (structures.isEmpty ? [fallbackStructure] : structures).shuffled()
-        let reference = shuffledStructures.first ?? fallbackStructure
+        let shuffledStructures = (structures.isEmpty ? [minimalFallbackStructure] : structures).shuffled()
+        let reference = shuffledStructures.first ?? minimalFallbackStructure
         let question = shuffledStructures.count > 1 ? shuffledStructures[1] : reference
 
         // Pick a rotation
@@ -61,16 +63,16 @@ struct PuzzleGenerator {
         // Generate wrong options
         let optionCount = difficulty.optionCount
         var options = [correctAnswer]
-        var seenBlockSets: Set<Set<Block>> = [correctAnswer.blocks]
+        var uniqueBlockConfigurations: Set<Set<Block>> = [correctAnswer.blocks]
 
         let wrongRotations = rotations.filter { $0 != rotation }.shuffled()
         for wrongRotation in wrongRotations {
             if options.count >= optionCount { break }
             let wrongAnswer = question.rotated(by: wrongRotation)
             // Make sure it's visually different from existing options
-            if !seenBlockSets.contains(wrongAnswer.blocks) {
+            if !uniqueBlockConfigurations.contains(wrongAnswer.blocks) {
                 options.append(wrongAnswer)
-                seenBlockSets.insert(wrongAnswer.blocks)
+                uniqueBlockConfigurations.insert(wrongAnswer.blocks)
             }
         }
 
@@ -82,18 +84,18 @@ struct PuzzleGenerator {
             let randomAxes = RotationAxis.allCases.shuffled()
             let extraRotation = Rotation3D(steps: Array(randomAxes.prefix(Int.random(in: 1...2))))
             let extraAnswer = question.rotated(by: extraRotation)
-            if !seenBlockSets.contains(extraAnswer.blocks) {
+            if !uniqueBlockConfigurations.contains(extraAnswer.blocks) {
                 options.append(extraAnswer)
-                seenBlockSets.insert(extraAnswer.blocks)
+                uniqueBlockConfigurations.insert(extraAnswer.blocks)
             }
         }
 
         if options.count < optionCount {
             for candidate in BlockStructure.allStructures {
                 if options.count >= optionCount { break }
-                if !seenBlockSets.contains(candidate.blocks) {
+                if !uniqueBlockConfigurations.contains(candidate.blocks) {
                     options.append(candidate)
-                    seenBlockSets.insert(candidate.blocks)
+                    uniqueBlockConfigurations.insert(candidate.blocks)
                 }
             }
         }

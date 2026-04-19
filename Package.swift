@@ -8,13 +8,13 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .library(
+        .executable(
             name: "RotationGame",
             targets: ["RotationGame"]
         )
     ],
     targets: [
-        .target(
+        .executableTarget(
             name: "RotationGame",
             path: "RotationGame/Sources"
         )

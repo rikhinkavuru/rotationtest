@@ -9,7 +9,8 @@ struct TimerBarView: View {
     let accentColor: Color
 
     private var progress: CGFloat {
-        CGFloat(timeRemaining / totalTime)
+        guard totalTime > 0 else { return 0 }
+        return min(1, max(0, CGFloat(timeRemaining / totalTime)))
     }
 
     private var timerColor: Color {

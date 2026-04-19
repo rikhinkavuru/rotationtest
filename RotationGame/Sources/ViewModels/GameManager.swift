@@ -11,6 +11,7 @@ enum Screen {
 }
 
 /// Central game state manager
+@MainActor
 class GameManager: ObservableObject {
     @Published var currentScreen: Screen = .menu
     @Published var selectedDifficulty: Difficulty = .beginner
@@ -34,6 +35,7 @@ class GameManager: ObservableObject {
 
     private var timer: AnyCancellable?
     private var puzzleStartTime: Date?
+    private var pendingAdvanceWorkItem: DispatchWorkItem?
 
     var currentPuzzle: Puzzle? {
         guard currentPuzzleIndex < puzzles.count else { return nil }
@@ -62,6 +64,9 @@ class GameManager: ObservableObject {
     // MARK: - Game Flow
 
     func startGame(difficulty: Difficulty) {
+        cancelPendingAdvance()
+        stopTimer()
+
         selectedDifficulty = difficulty
         puzzles = PuzzleGenerator.generateSession(difficulty: difficulty)
         currentPuzzleIndex = 0
@@ -81,7 +86,7 @@ class GameManager: ObservableObject {
     }
 
     func submitAnswer(optionIndex: Int) {
-        guard let puzzle = currentPuzzle else { return }
+        guard !isPuzzleComplete, let puzzle = currentPuzzle else { return }
 
         stopTimer()
 
@@ -113,9 +118,7 @@ class GameManager: ObservableObject {
         isPuzzleComplete = true
 
         // Auto-advance after delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.advanceToNextPuzzle()
-        }
+        scheduleAdvanceToNextPuzzle()
     }
 
     func advanceToNextPuzzle() {
@@ -157,6 +160,7 @@ class GameManager: ObservableObject {
     }
 
     func returnToMenu() {
+        cancelPendingAdvance()
         stopTimer()
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             currentScreen = .menu
@@ -190,17 +194,19 @@ class GameManager: ObservableObject {
     }
 
     private func handleTimeout() {
+        guard !isPuzzleComplete else { return }
         stopTimer()
         streak = 0
         lastAnswerCorrect = false
         isPuzzleComplete = true
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.advanceToNextPuzzle()
-        }
+        scheduleAdvanceToNextPuzzle()
     }
 
     private func finishGame() {
+        cancelPendingAdvance()
+        stopTimer()
+
         totalGamesPlayed += 1
         lifetimeCorrect += correctAnswers
         lifetimeBestStreak = max(lifetimeBestStreak, bestStreak)
@@ -208,5 +214,21 @@ class GameManager: ObservableObject {
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             currentScreen = .results
         }
+    }
+
+    private func scheduleAdvanceToNextPuzzle() {
+        cancelPendingAdvance()
+
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self, self.currentScreen == .game else { return }
+            self.advanceToNextPuzzle()
+        }
+        pendingAdvanceWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: workItem)
+    }
+
+    private func cancelPendingAdvance() {
+        pendingAdvanceWorkItem?.cancel()
+        pendingAdvanceWorkItem = nil
     }
 }

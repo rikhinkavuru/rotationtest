@@ -39,14 +39,18 @@ struct PuzzleGenerator {
     static func generate(difficulty: Difficulty) -> Puzzle {
         let structures = structuresForDifficulty(difficulty)
         let rotations = Rotation3D.rotationsForDifficulty(difficulty)
+        let fallbackStructure = BlockStructure.beginnerStructures.first ?? BlockStructure(
+            blocks: [Block(x: 0, y: 0, z: 0)],
+            name: "Fallback"
+        )
 
         // Pick two different structures
-        let shuffledStructures = structures.shuffled()
-        let reference = shuffledStructures[0]
-        let question = shuffledStructures.count > 1 ? shuffledStructures[1] : shuffledStructures[0]
+        let shuffledStructures = (structures.isEmpty ? [fallbackStructure] : structures).shuffled()
+        let reference = shuffledStructures.first ?? fallbackStructure
+        let question = shuffledStructures.count > 1 ? shuffledStructures[1] : reference
 
         // Pick a rotation
-        let rotation = rotations.randomElement()!
+        let rotation = rotations.randomElement() ?? Rotation3D(steps: [.y])
 
         // Compute the correct rotated versions
         let rotatedRef = reference.rotated(by: rotation)
@@ -67,13 +71,28 @@ struct PuzzleGenerator {
         }
 
         // If we still need more options, generate with combined rotations
-        while options.count < optionCount {
+        var attempts = 0
+        let maxAttempts = 64
+        while options.count < optionCount && attempts < maxAttempts {
+            attempts += 1
             let randomAxes = RotationAxis.allCases.shuffled()
             let extraRotation = Rotation3D(steps: Array(randomAxes.prefix(Int.random(in: 1...2))))
             let extraAnswer = question.rotated(by: extraRotation)
             if !options.contains(where: { $0.blocks == extraAnswer.blocks }) {
                 options.append(extraAnswer)
             }
+        }
+
+        if options.count < optionCount {
+            for candidate in BlockStructure.allStructures where options.count < optionCount {
+                if !options.contains(where: { $0.blocks == candidate.blocks }) {
+                    options.append(candidate)
+                }
+            }
+        }
+
+        while options.count < optionCount {
+            options.append(options.last ?? correctAnswer)
         }
 
         // Shuffle options and find correct index

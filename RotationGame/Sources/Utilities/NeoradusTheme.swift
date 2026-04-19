@@ -73,7 +73,11 @@ enum NeoradusTheme {
     ]
 
     static func blockColors(forIndex index: Int) -> BlockColors {
-        blockPalette[index % blockPalette.count]
+        guard !blockPalette.isEmpty else {
+            return BlockColors(top: .gray, left: .gray.opacity(0.8), right: .gray.opacity(0.6))
+        }
+        let safeIndex = ((index % blockPalette.count) + blockPalette.count) % blockPalette.count
+        return blockPalette[safeIndex]
     }
 }
 

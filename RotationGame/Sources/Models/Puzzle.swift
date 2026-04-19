@@ -35,13 +35,15 @@ struct Puzzle: Identifiable {
 // MARK: - Puzzle Generator
 
 struct PuzzleGenerator {
+    private static let maxOptionGenerationAttempts = 64
+
     /// Generate a puzzle for the given difficulty
     static func generate(difficulty: Difficulty) -> Puzzle {
         let structures = structuresForDifficulty(difficulty)
         let rotations = Rotation3D.rotationsForDifficulty(difficulty)
         let fallbackStructure = BlockStructure.beginnerStructures.first ?? BlockStructure(
             blocks: [Block(x: 0, y: 0, z: 0)],
-            name: "Fallback"
+            name: "Minimal Structure"
         )
 
         // Pick two different structures
@@ -72,8 +74,8 @@ struct PuzzleGenerator {
 
         // If we still need more options, generate with combined rotations
         var attempts = 0
-        let maxAttempts = 64
-        while options.count < optionCount && attempts < maxAttempts {
+        // Cap random generation attempts to prevent an infinite loop on highly symmetric structures.
+        while options.count < optionCount && attempts < maxOptionGenerationAttempts {
             attempts += 1
             let randomAxes = RotationAxis.allCases.shuffled()
             let extraRotation = Rotation3D(steps: Array(randomAxes.prefix(Int.random(in: 1...2))))
@@ -91,8 +93,8 @@ struct PuzzleGenerator {
             }
         }
 
-        while options.count < optionCount {
-            options.append(options.last ?? correctAnswer)
+        if options.isEmpty {
+            options = [correctAnswer]
         }
 
         // Shuffle options and find correct index

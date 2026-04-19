@@ -220,7 +220,7 @@ class GameManager: ObservableObject {
         cancelPendingAdvance()
 
         let workItem = DispatchWorkItem { [weak self] in
-            guard let self, self.currentScreen == .game else { return }
+            guard let self, self.currentScreen == .game, self.isPuzzleComplete else { return }
             self.advanceToNextPuzzle()
         }
         pendingAdvanceWorkItem = workItem

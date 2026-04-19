@@ -61,14 +61,16 @@ struct PuzzleGenerator {
         // Generate wrong options
         let optionCount = difficulty.optionCount
         var options = [correctAnswer]
+        var seenBlockSets: Set<Set<Block>> = [correctAnswer.blocks]
 
         let wrongRotations = rotations.filter { $0 != rotation }.shuffled()
         for wrongRotation in wrongRotations {
             if options.count >= optionCount { break }
             let wrongAnswer = question.rotated(by: wrongRotation)
             // Make sure it's visually different from existing options
-            if !options.contains(where: { $0.blocks == wrongAnswer.blocks }) {
+            if !seenBlockSets.contains(wrongAnswer.blocks) {
                 options.append(wrongAnswer)
+                seenBlockSets.insert(wrongAnswer.blocks)
             }
         }
 
@@ -80,16 +82,18 @@ struct PuzzleGenerator {
             let randomAxes = RotationAxis.allCases.shuffled()
             let extraRotation = Rotation3D(steps: Array(randomAxes.prefix(Int.random(in: 1...2))))
             let extraAnswer = question.rotated(by: extraRotation)
-            if !options.contains(where: { $0.blocks == extraAnswer.blocks }) {
+            if !seenBlockSets.contains(extraAnswer.blocks) {
                 options.append(extraAnswer)
+                seenBlockSets.insert(extraAnswer.blocks)
             }
         }
 
         if options.count < optionCount {
             for candidate in BlockStructure.allStructures {
                 if options.count >= optionCount { break }
-                if !options.contains(where: { $0.blocks == candidate.blocks }) {
+                if !seenBlockSets.contains(candidate.blocks) {
                     options.append(candidate)
+                    seenBlockSets.insert(candidate.blocks)
                 }
             }
         }

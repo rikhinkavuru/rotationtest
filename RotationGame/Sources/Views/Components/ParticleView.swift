@@ -9,6 +9,7 @@ struct ParticleView: View {
     let color: Color
 
     @State private var particles: [Particle] = []
+    @State private var animationTimer: Timer?
 
     struct Particle: Identifiable {
         let id = UUID()
@@ -37,7 +38,10 @@ struct ParticleView: View {
             }
             .onAppear {
                 generateParticles()
-                animateParticles()
+                startAnimation()
+            }
+            .onDisappear {
+                stopAnimation()
             }
         }
         .allowsHitTesting(false)
@@ -55,8 +59,8 @@ struct ParticleView: View {
         }
     }
 
-    private func animateParticles() {
-        Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { _ in
+    private func startAnimation() {
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { _ in
             for i in particles.indices {
                 particles[i].y -= particles[i].speed
                 if particles[i].y < -0.05 {
@@ -65,6 +69,11 @@ struct ParticleView: View {
                 }
             }
         }
+    }
+
+    private func stopAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = nil
     }
 }
 

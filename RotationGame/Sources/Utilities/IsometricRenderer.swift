@@ -95,10 +95,18 @@ enum IsometricRenderer {
             rightFace(at: block, scale: scale)
         }
 
-        let minX = points.map(\.x).min()!
-        let maxX = points.map(\.x).max()!
-        let minY = points.map(\.y).min()!
-        let maxY = points.map(\.y).max()!
+        guard let first = points.first else { return .zero }
+
+        let (minX, maxX, minY, maxY) = points.reduce(
+            (first.x, first.x, first.y, first.y)
+        ) { result, point in
+            (
+                min(result.0, point.x),
+                max(result.1, point.x),
+                min(result.2, point.y),
+                max(result.3, point.y)
+            )
+        }
 
         let structureWidth = maxX - minX
         let structureHeight = maxY - minY

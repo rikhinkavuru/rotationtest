@@ -85,7 +85,12 @@ class GameManager: ObservableObject {
 
         stopTimer()
 
-        let timeTaken = puzzleStartTime.map { Date().timeIntervalSince($0) } ?? 0
+        let timeTaken: TimeInterval
+        if let start = puzzleStartTime {
+            timeTaken = Date().timeIntervalSince(start)
+        } else {
+            timeTaken = 0
+        }
         totalTimeTaken += timeTaken
 
         let isCorrect = optionIndex == puzzle.correctOptionIndex

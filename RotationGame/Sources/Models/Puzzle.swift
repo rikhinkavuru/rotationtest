@@ -78,7 +78,21 @@ struct PuzzleGenerator {
 
         // Shuffle options and find correct index
         let shuffledOptions = options.shuffled()
-        let correctIndex = shuffledOptions.firstIndex(where: { $0.blocks == correctAnswer.blocks })!
+        guard let correctIndex = shuffledOptions.firstIndex(where: { $0.blocks == correctAnswer.blocks }) else {
+            // Fallback: place correct answer at index 0
+            var fallbackOptions = [correctAnswer] + shuffledOptions.filter { $0.blocks != correctAnswer.blocks }
+            fallbackOptions = Array(fallbackOptions.prefix(optionCount))
+            return Puzzle(
+                referenceStructure: reference,
+                rotatedReference: rotatedRef,
+                questionStructure: question,
+                correctAnswer: correctAnswer,
+                options: fallbackOptions,
+                correctOptionIndex: 0,
+                rotation: rotation,
+                difficulty: difficulty
+            )
+        }
 
         return Puzzle(
             referenceStructure: reference,

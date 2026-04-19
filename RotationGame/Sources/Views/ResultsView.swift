@@ -213,17 +213,13 @@ struct ResultsView: View {
 
     private func animateScore() {
         let target = gameManager.score
-        let duration: Double = 1.0
-        let steps = 30
-        let interval = duration / Double(steps)
-        let increment = Double(target) / Double(steps)
-
-        for step in 0...steps {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(step) * interval) {
-                withAnimation(.none) {
-                    displayedScore = min(Int(Double(step) * increment), target)
-                }
-            }
+        guard target > 0 else {
+            displayedScore = 0
+            return
+        }
+        // Use SwiftUI's built-in animation with a single state change
+        withAnimation(.easeOut(duration: 1.2)) {
+            displayedScore = target
         }
     }
 }

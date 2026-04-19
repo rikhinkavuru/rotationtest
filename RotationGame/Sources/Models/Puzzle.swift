@@ -86,7 +86,8 @@ struct PuzzleGenerator {
         }
 
         if options.count < optionCount {
-            for candidate in BlockStructure.allStructures where options.count < optionCount {
+            for candidate in BlockStructure.allStructures {
+                if options.count >= optionCount { break }
                 if !options.contains(where: { $0.blocks == candidate.blocks }) {
                     options.append(candidate)
                 }

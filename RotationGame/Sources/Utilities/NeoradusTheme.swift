@@ -76,7 +76,10 @@ enum NeoradusTheme {
         guard !blockPalette.isEmpty else {
             return BlockColors(top: .gray, left: .gray.opacity(0.8), right: .gray.opacity(0.6))
         }
-        let safeIndex = ((index % blockPalette.count) + blockPalette.count) % blockPalette.count
+        var safeIndex = index % blockPalette.count
+        if safeIndex < 0 {
+            safeIndex += blockPalette.count
+        }
         return blockPalette[safeIndex]
     }
 }
